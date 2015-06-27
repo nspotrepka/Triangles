@@ -211,7 +211,8 @@ void draw() {
     text("Press L to toggle lighting: "+(renderLights?"LIGHTS ON":"LIGHTS OFF"), 30, 120);
     text("Press P to toggle pixelation: "+(pixelate?"PIXELATION ON":"PIXELATION OFF"), 30, 150);
     text("Press UP and DOWN to change pixel size: PIXEL SIZE "+pixelSize, 30, 180);
-    text("Press SPACE to generate a new world", 30, 210);
+    text("Press Z to toggle zoom: "+(z==0?"NEAR":"FAR"), 30, 210);
+    text("Press SPACE to generate a new world", 30, 240);
   }
   
   theta += PI/slowness;
@@ -244,6 +245,11 @@ void keyPressed() {
   } else if(keyCode == DOWN) {
     if(pixelSize > 1)
       pixelSize /= 2;
+  } else if(key == 'z' || key == 'Z') {
+    if(z == 0)
+      z = 3000;
+    else
+      z = 0;
   }
 }
 

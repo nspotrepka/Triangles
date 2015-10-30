@@ -1,11 +1,3 @@
-import ddf.minim.spi.*;
-import ddf.minim.signals.*;
-import ddf.minim.*;
-import ddf.minim.analysis.*;
-import ddf.minim.ugens.*;
-import ddf.minim.effects.*;
-
-
 // Current triangles
 ArrayList<Triangle> triangles = new ArrayList<Triangle>();
 // Next triangles to be displayed
@@ -26,7 +18,6 @@ boolean pixelate = false;
 int pixelSize = 32;
 
 // Audio Visualizer
-boolean audioDraw = false;
 boolean regenerateOnTransients = false;
 
 // Movement variables
@@ -43,21 +34,9 @@ DirectionalLight[] lights = new DirectionalLight[6];
 // Drawing
 PGraphics g;
 
-// Audio Settings
-Minim minim;
-AudioInput in;
-BeatDetect beat;
-FFT fftLeft;
-FFT fftRight;
-int type = Minim.STEREO;
-int bufferSize = 1024;
-float sampleRate = 48000.0f;
-int bitRate = 16;
-float pTime = 0.0f;
-float release = 200.0f;
-
 // Show info text
 boolean showText = true;
+
 
 void setup() {
   frameRate(120);
@@ -72,24 +51,9 @@ void setup() {
   createTriangles();
   triangles = trianglesNext;
   createTriangles();
-  
-  minim = new Minim(this);
-  in = minim.getLineIn(type, bufferSize, sampleRate, bitRate);
-  beat = new BeatDetect(bufferSize, sampleRate);
-  fftLeft = new FFT(bufferSize, sampleRate);
-  fftRight = new FFT(bufferSize, sampleRate);
 }
 
 void draw() {
-  // Beat detection
-  beat.detect(in.mix);
-  if(regenerateOnTransients && beat.isKick() && (beat.isSnare() || beat.isHat()) && (millis() - pTime) >= release) {
-    nextTriangles();
-    pTime = millis();
-  }
-  // Spectral analysis
-  fftLeft.forward(in.left);
-  fftRight.forward(in.right);
   
   /* BEGIN 3D DRAWING */
   
@@ -139,48 +103,8 @@ void draw() {
   g.endDraw();
   
   /* END 3D DRAWING */
-
+  
   g.loadPixels();
-
-  // Audio Visualizer
-  if(audioDraw) {
-    float[] fftLeftBand = new float[fftLeft.specSize()];
-    float[] fftRightBand = new float[fftRight.specSize()];
-    for(int i=0; i<fftLeft.specSize(); i++) {
-      fftLeftBand[i] = fftLeft.getBand(i);
-      fftRightBand[i] = fftRight.getBand(i);
-    }
-    
-    color[] gPixels = new color[g.pixels.length];
-    int[] indices = new int[width];
-    for(int i=0; i<indices.length; i++) {
-      indices[i] = abs((i-width/2)/2);
-    }
-    float[] logs = new float[fftLeftBand.length];
-    for(int i=0; i<logs.length; i++) {
-      logs[i] = log(i+2)/log(fftLeftBand.length)*10.0;
-    }
-    for(int i=0; i<g.pixels.length; i++) {
-      int x = i % width;
-      int y = i / width;
-      float band = 0.0f;
-      int index = indices[x];
-      if(index < fftLeftBand.length) {
-        if(x < width/2)
-          band = fftLeftBand[index];
-        else
-          band = fftRightBand[index];
-        band *= logs[index];
-      }
-      if(x%2 == 0)
-        gPixels[i] = g.pixels[x+width*(max((int)(y-band), 0))];
-      else
-        gPixels[i] = g.pixels[x+width*(min((int)(y+band), height-1))];
-    }
-    for(int i=0; i<g.pixels.length; i++) {
-      g.pixels[i] = gPixels[i];
-    }
-  }
   
   // Pixelation
   if(pixelate) {
@@ -205,9 +129,8 @@ void draw() {
   // Text on screen
   if(showText) {
     fill(300);
-    text("Press T to toggle this text", 30, 30);
-    text("fps: "+frameRate, 30, 60);
-    text("Press A to toggle audio visualizer: "+(audioDraw?"AUDIO ON":"AUDIO OFF"), 30, 90);
+    text("fps: "+frameRate, 30, 30);
+    text("Press T to toggle this text", 30, 60);
     text("Press L to toggle lighting: "+(renderLights?"LIGHTS ON":"LIGHTS OFF"), 30, 120);
     text("Press P to toggle pixelation: "+(pixelate?"PIXELATION ON":"PIXELATION OFF"), 30, 150);
     text("Press UP and DOWN to change pixel size: PIXEL SIZE "+pixelSize, 30, 180);
@@ -219,8 +142,6 @@ void draw() {
 }
 
 void stop() {
-  in.close();
-  minim.stop();
   super.stop();
 }
 
@@ -231,8 +152,6 @@ void mousePressed() {
 void keyPressed() {
   if(key == ' ') {
     nextTriangles();
-  } else if(key == 'a' || key == 'A') {
-    audioDraw = !audioDraw;
   } else if(key == 'l' || key == 'L') {
     renderLights = !renderLights;
   } else if(key == 'p' || key == 'P') {
